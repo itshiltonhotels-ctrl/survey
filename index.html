@@ -107,8 +107,28 @@ async function checkAdmin(){
  if(!s||s.user.is_anonymous)return false;
  const r=await sb.from('admins').select('user_id').eq('user_id',s.user.id);return !!(r.data&&r.data.length)}
 function shell(inner,wide){return `<div style="max-width:${wide?1100:720}px;margin:0 auto"><header><div class="brand"><span class="av">🌼</span>Mary</div></header>${err?`<p class="err">${esc(err)}</p>`:''}${inner}</div>`}
-function loginHTML(){return shell(`<div class="card" style="max-width:420px;margin:0 auto"><h2>Admin login</h2><input type="text" id="em" placeholder="Admin email" autocomplete="username"><input type="password" id="pw" style="margin-top:10px" placeholder="Password" autocomplete="current-password"><label class="meta" style="display:block;margin-top:8px"><input type="checkbox" onchange="document.getElementById('pw').type=this.checked?'text':'password'"> Show password</label><p class="err" id="le"></p><div class="row mt"><button class="btn" id="li">Sign in</button></div></div>`)}
-function bindLogin(){const go=async()=>{const {error}=await sb.auth.signInWithPassword({email:$('#em').value.trim(),password:$('#pw').value});if(error){$('#le').textContent=error.message;return}location.reload()};$('#li').onclick=go;$('#pw').onkeydown=e=>e.key==='Enter'&&go()}
+function loginHTML(){return shell(`<div class="card" style="max-width:420px;margin:0 auto"><h2>Admin login</h2><input type="text" id="em" placeholder="Admin email" autocomplete="username"><input type="password" id="pw" style="margin-top:10px" placeholder="Password" autocomplete="current-password"><label class="meta" style="display:block;margin-top:8px"><input type="checkbox" onchange="document.getElementById('pw').type=this.checked?'text':'password'"> Show password</label><p class="err" id="le"></p><div class="row mt"><button type="button" class="btn" id="li">Sign in</button></div></div>`)}
+function bindLogin(){
+ const btn=$('#li'),msg=$('#le');
+ const go=async()=>{
+  msg.textContent='';
+  const email=$('#em').value.trim(),password=$('#pw').value;
+  if(!email||!password){msg.textContent='Please enter both email and password.';return}
+  btn.disabled=true;btn.textContent='Signing in...';
+  try{
+   const {data,error}=await sb.auth.signInWithPassword({email,password});
+   if(error)throw error;
+   const uid=data.user?.id;
+   if(!uid)throw new Error('Login succeeded, but Supabase did not return a user ID.');
+   const {data:rows,error:adminError}=await sb.from('admins').select('user_id').eq('user_id',uid);
+   if(adminError)throw new Error('Signed in, but admin access could not be checked: '+adminError.message);
+   if(!rows||!rows.length)throw new Error('Password is correct, but this user is not authorised as an admin. Add this user UUID to the admins table.');
+   location.reload();
+  }catch(e){msg.textContent=e.message||String(e);btn.disabled=false;btn.textContent='Sign in';}
+ };
+ btn.addEventListener('click',go);
+ $('#pw').addEventListener('keydown',e=>{if(e.key==='Enter')go()});
+}
 async function init(){
  try{
   if(location.hash==='#admin'){
