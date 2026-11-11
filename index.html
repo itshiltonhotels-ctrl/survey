@@ -50,6 +50,8 @@ dialog{border:1px solid var(--line);background:var(--card);color:var(--ink);bord
 dialog::backdrop{background:#0008}
 h2{font-size:24px;margin-bottom:12px}h3{font-size:18px;margin:22px 0 8px}
 .err{color:#d0455a}
+input,textarea{-webkit-text-fill-color:var(--ink);caret-color:var(--pri);pointer-events:auto;-webkit-user-select:text;user-select:text}
+input::placeholder,textarea::placeholder{color:var(--mut);-webkit-text-fill-color:var(--mut);opacity:1}
 </style></head>
 <body><div class="wrap" id="app"><p class="meta">Loading…</p></div>
 <dialog id="dlg"></dialog>
@@ -105,7 +107,7 @@ async function checkAdmin(){
  if(!s||s.user.is_anonymous)return false;
  const r=await sb.from('admins').select('user_id').eq('user_id',s.user.id);return !!(r.data&&r.data.length)}
 function shell(inner,wide){return `<div style="max-width:${wide?1100:720}px;margin:0 auto"><header><div class="brand"><span class="av">🌼</span>Mary</div></header>${err?`<p class="err">${esc(err)}</p>`:''}${inner}</div>`}
-function loginHTML(){return shell(`<div class="card" style="max-width:420px;margin:0 auto"><h2>Admin login</h2><input type="text" id="em" placeholder="Admin email" autocomplete="username"><input type="password" id="pw" style="margin-top:10px" placeholder="Password" autocomplete="current-password"><p class="err" id="le"></p><div class="row mt"><button class="btn" id="li">Sign in</button></div></div>`)}
+function loginHTML(){return shell(`<div class="card" style="max-width:420px;margin:0 auto"><h2>Admin login</h2><input type="text" id="em" placeholder="Admin email" autocomplete="username"><input type="password" id="pw" style="margin-top:10px" placeholder="Password" autocomplete="current-password"><label class="meta" style="display:block;margin-top:8px"><input type="checkbox" onchange="document.getElementById('pw').type=this.checked?'text':'password'"> Show password</label><p class="err" id="le"></p><div class="row mt"><button class="btn" id="li">Sign in</button></div></div>`)}
 function bindLogin(){const go=async()=>{const {error}=await sb.auth.signInWithPassword({email:$('#em').value.trim(),password:$('#pw').value});if(error){$('#le').textContent=error.message;return}location.reload()};$('#li').onclick=go;$('#pw').onkeydown=e=>e.key==='Enter'&&go()}
 async function init(){
  try{
@@ -209,5 +211,6 @@ function detail(id){
  ${act(r.answers||{}).map((x,i)=>{const v=(r.answers||{})[x.id],has=x.id in (r.answers||{});return `<div class="qi"><span class="meta">${esc(x.q)}</span><br><b>${has?(esc(x.t==='mood'?v+' – '+MOOD[v-1]:v)||'<span class="meta">Skipped</span>'):'<span class="meta">Not answered yet</span>'}</b></div>`}).join('')}`;
  dl.showModal();$('#cl').onclick=()=>dl.close();
 }
+window.addEventListener('hashchange',()=>location.reload());
 init();
 </script></body></html>
