@@ -52,6 +52,8 @@ h2{font-size:24px;margin-bottom:12px}h3{font-size:18px;margin:22px 0 8px}
 .err{color:#d0455a}
 input,textarea{-webkit-text-fill-color:var(--ink);caret-color:var(--pri);pointer-events:auto;-webkit-user-select:text;user-select:text}
 input::placeholder,textarea::placeholder{color:var(--mut);-webkit-text-fill-color:var(--mut);opacity:1}
+@media print{.noprint,dialog::backdrop{display:none!important}body{background:#fff;color:#000}.card{break-inside:avoid}}
+select.opt{font:inherit}.tabs{flex-wrap:wrap}
 </style></head>
 <body><div class="wrap" id="app"><p class="meta">Loading…</p></div>
 <dialog id="dlg"></dialog>
@@ -97,38 +99,19 @@ function save(){S.updatedAt=Date.now();
  const d={user_id:me,name:S.name,answers:JSON.parse(JSON.stringify(S.answers)),status:S.status,started_at:new Date(S.startedAt||Date.now()).toISOString(),updated_at:new Date().toISOString(),completed_at:S.completedAt?new Date(S.completedAt).toISOString():null};
  chain=chain.then(async()=>{const {error}=await sb.from('responses').upsert(d);if(error)throw error}).catch(e=>{err='Could not save: '+e.message;render()})}
 function firstOpen(){const l=act(S.answers);const i=l.findIndex(x=>!(x.id in S.answers));return i<0?l.length:i}
+const nm=r=>r.name||'(name not entered yet)';
 async function loadAll(){
  const a=await sb.from('responses').select('*').order('updated_at',{ascending:false});
  if(a.error)err=a.error.message;else{err='';all=a.data.map(row)}
  const r=await sb.from('roster').select('name');roster=(r.data||[]).map(x=>x.name);
- const ae=document.activeElement;if(!(ae&&ae.tagName==='TEXTAREA'))render()}
+ const ae=document.activeElement;if(!(ae&&['TEXTAREA','SELECT','INPUT'].includes(ae.tagName)))render()}
 async function checkAdmin(){
  const {data}=await sb.auth.getSession();const s=data.session;
  if(!s||s.user.is_anonymous)return false;
  const r=await sb.from('admins').select('user_id').eq('user_id',s.user.id);return !!(r.data&&r.data.length)}
 function shell(inner,wide){return `<div style="max-width:${wide?1100:720}px;margin:0 auto"><header><div class="brand"><span class="av">🌼</span>Mary</div></header>${err?`<p class="err">${esc(err)}</p>`:''}${inner}</div>`}
-function loginHTML(){return shell(`<div class="card" style="max-width:420px;margin:0 auto"><h2>Admin login</h2><input type="text" id="em" placeholder="Admin email" autocomplete="username"><input type="password" id="pw" style="margin-top:10px" placeholder="Password" autocomplete="current-password"><label class="meta" style="display:block;margin-top:8px"><input type="checkbox" onchange="document.getElementById('pw').type=this.checked?'text':'password'"> Show password</label><p class="err" id="le"></p><div class="row mt"><button type="button" class="btn" id="li">Sign in</button></div></div>`)}
-function bindLogin(){
- const btn=$('#li'),msg=$('#le');
- const go=async()=>{
-  msg.textContent='';
-  const email=$('#em').value.trim(),password=$('#pw').value;
-  if(!email||!password){msg.textContent='Please enter both email and password.';return}
-  btn.disabled=true;btn.textContent='Signing in...';
-  try{
-   const {data,error}=await sb.auth.signInWithPassword({email,password});
-   if(error)throw error;
-   const uid=data.user?.id;
-   if(!uid)throw new Error('Login succeeded, but Supabase did not return a user ID.');
-   const {data:rows,error:adminError}=await sb.from('admins').select('user_id').eq('user_id',uid);
-   if(adminError)throw new Error('Signed in, but admin access could not be checked: '+adminError.message);
-   if(!rows||!rows.length)throw new Error('Password is correct, but this user is not authorised as an admin. Add this user UUID to the admins table.');
-   location.reload();
-  }catch(e){msg.textContent=e.message||String(e);btn.disabled=false;btn.textContent='Sign in';}
- };
- btn.addEventListener('click',go);
- $('#pw').addEventListener('keydown',e=>{if(e.key==='Enter')go()});
-}
+function loginHTML(){return shell(`<div class="card" style="max-width:420px;margin:0 auto"><h2>Admin login</h2><input type="text" id="em" placeholder="Admin email" autocomplete="username"><input type="password" id="pw" style="margin-top:10px" placeholder="Password" autocomplete="current-password"><label class="meta" style="display:block;margin-top:8px"><input type="checkbox" onchange="document.getElementById('pw').type=this.checked?'text':'password'"> Show password</label><p class="err" id="le"></p><div class="row mt"><button class="btn" id="li">Sign in</button></div></div>`)}
+function bindLogin(){const go=async()=>{const {error}=await sb.auth.signInWithPassword({email:$('#em').value.trim(),password:$('#pw').value});if(error){$('#le').textContent=error.message;return}location.reload()};$('#li').onclick=go;$('#pw').onkeydown=e=>e.key==='Enter'&&go()}
 async function init(){
  try{
   if(location.hash==='#admin'){
@@ -153,14 +136,11 @@ function render(){
 const mary=t=>`<div class="bub"><span class="av">🌼</span><div class="t">${t}</div></div>`;
 
 function surveyHTML(){
- if(!S.name)return `<div class="card">${mary('Hi, I’m Mary, your employee check-in buddy. I’m here to listen and help make work and life a little better. First, what’s your full name?')}
- <div class="pad"><input type="text" id="nm" placeholder="Your full name" autocomplete="name">
- <p class="meta">Your name is saved with your answers so the organisation can see who has completed the check-in.</p>
- <button class="btn mt" id="go">Start check-in</button></div></div>`;
- if(S.status==='completed')return `<div class="card">${mary(`Thank you, ${esc(S.name)}. Your answers are submitted. Take care of yourself! 🌼`)}<p class="meta pad">Submitted ${fmt(S.completedAt)}</p></div>`;
+  if(S.status==='completed')return `<div class="card">${mary(`Thank you, ${esc(S.name)}. Your answers are submitted. Take care of yourself! 🌼`)}<p class="meta pad">Submitted ${fmt(S.completedAt)}</p></div>`;
  const l=act(S.answers),n=l.length;
- if(cur>=n)return `<div class="card">${mary(`That’s everything, ${esc(S.name)}. Ready to submit your answers?`)}
- <div class="row pad"><button class="btn ghost" id="back">Back</button><button class="btn" id="sub">Submit my answers</button></div></div>`;
+ if(cur>=n)return `<div class="card">${mary('That’s everything. Please type your full name so we know who completed the check-in, then submit.')}
+ <div class="pad"><input type="text" id="nm" placeholder="Your full name" autocomplete="name" value="${esc(S.name||'')}"><p class="meta">Your name is saved with your answers so the organisation can see who has completed the check-in.</p><p class="err" id="ne"></p></div>
+ <div class="row pad mt"><button class="btn ghost" id="back">Back</button><button class="btn" id="sub">Submit my answers</button></div></div>`;
  const x=l[cur],v=S.answers[x.id];let o='';
  const b=(val,lab,sub)=>`<button class="opt ${v===val?'on':''}" data-a="${esc(val)}">${lab}${sub?`<small>${sub}</small>`:''}</button>`;
  if(x.t==='yn')o=`<div class="opts">${b('Yes','Yes')}${b('No','No')}</div>`;
@@ -169,67 +149,122 @@ function surveyHTML(){
  if(x.t==='s5')o=`<div class="opts">${[1,2,3,4,5].map(i=>b(String(i),i)).join('')}</div><div class="ends"><span>${x.lo}</span><span>${x.hi}</span></div>`;
  if(x.t==='mood')o=`<div class="opts">${MOOD.map((m,i)=>b(String(i+1),i+1,m)).join('')}</div>`;
  if(x.t==='tx')o=`<div class="pad"><textarea id="tx" placeholder="Type your answer here">${esc(v||'')}</textarea><div class="row mt"><button class="btn" id="nx">Next</button><button class="btn ghost" id="sk">Skip</button></div></div>`;
- return `<div class="card"><div class="meta">Question ${cur+1} of ${n}</div><div class="bar"><i style="width:${cur/n*100}%"></i></div>${mary(esc(x.q))}${o}
+ return `<div class="card"><div class="meta">Question ${cur+1} of ${n}</div><div class="bar"><i style="width:${cur/n*100}%"></i></div>${cur===0?mary('Hi, I’m Mary, your employee check-in buddy. I’m here to listen and help make work and life a little better. Let’s begin.'):''}${mary(esc(x.q))}${o}
  ${cur>0?'<div class="pad mt"><button class="btn ghost" id="back">← Back</button></div>':''}</div>`;
 }
 function bindSurvey(){
  const g=s=>$(s);
- if(g('#go')){const i=g('#nm');const go=()=>{const v=i.value.trim();if(v.length<2){i.focus();return}S.name=v;S.status='in_progress';S.startedAt=Date.now();save();render()};g('#go').onclick=go;i.onkeydown=e=>e.key==='Enter'&&go();i.focus()}
+ 
  if(g('#back'))g('#back').onclick=()=>{cur=Math.max(0,cur-1);render()};
- if(g('#sub'))g('#sub').onclick=()=>{S.status='completed';S.completedAt=Date.now();save();render()};
- const l=S.name?act(S.answers):[],x=l[cur];
- app.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{S.answers[x.id]=b.dataset.a;S.status='in_progress';save();setTimeout(()=>{cur++;render()},180);b.classList.add('on')});
- const adv=val=>{S.answers[x.id]=val;save();cur++;render()};
+ if(g('#sub'))g('#sub').onclick=()=>{const v=g('#nm').value.trim();if(v.length<2){g('#ne').textContent='Please enter your full name.';g('#nm').focus();return}S.name=v;S.status='completed';S.completedAt=Date.now();if(!S.startedAt)S.startedAt=Date.now();save();render()};
+ const l=act(S.answers),x=l[cur];
+ app.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{S.answers[x.id]=b.dataset.a;S.status='in_progress';if(!S.startedAt)S.startedAt=Date.now();save();setTimeout(()=>{cur++;render()},180);b.classList.add('on')});
+ const adv=val=>{S.answers[x.id]=val;S.status='in_progress';if(!S.startedAt)S.startedAt=Date.now();save();cur++;render()};
  if(g('#nx'))g('#nx').onclick=()=>adv(g('#tx').value.trim());
  if(g('#sk'))g('#sk').onclick=()=>adv('');
 }
 
 /* ---------- Admin ---------- */
-let filt='',stat='all';
+let filt='',stat='all',sortBy='new',tab='overview',qsel='q2',qans='all',cfilt='';
+const QM=Object.fromEntries(Q.map(x=>[x.id,x]));
 const norm=s=>String(s||'').trim().toLowerCase().replace(/\s+/g,' ');
-function prog(r){const l=act(r.answers||{});return{n:l.filter(x=>x.id in (r.answers||{})).length,t:l.length}}
+const prog=r=>{const l=act(r.answers||{});return{n:l.filter(x=>x.id in (r.answers||{})).length,t:l.length}};
+const THEMES=[['Belonging & commitment',['q2','q3','q4']],['Role clarity & manager support',['q5','q7','q8']],['Growth & development',['q9','q10','q11','q12']],['Respect & fairness',['q13','q14']],['Recognition',['q15','q16']],['Workload & wellbeing',['q17','q18','q23','q24']],['Communication',['q19','q20']]];
+const isPos=(x,v)=>x.t==='yn'?v==='Yes':x.t==='s10'?+v>=7:(x.t==='s5'||x.t==='mood')?+v>=4:null;
+const ans=(r,x)=>(r.answers||{})[x.id];
+const has=v=>v!==undefined&&v!=='';
+const lab=(x,v)=>x.t==='mood'&&has(v)?v+' – '+MOOD[v-1]:v;
+const mins=r=>r.status==='completed'&&r.startedAt&&r.completedAt?Math.max(1,Math.round((r.completedAt-r.startedAt)/60000)):null;
+const opts=x=>x.t==='yn'?['Yes','No']:x.t==='ch'?x.o:x.t==='s10'?[...Array(10)].map((_,i)=>String(i+1)):(x.t==='mood'||x.t==='s5')?['1','2','3','4','5']:[];
+const bar=(p,c)=>`<div class="seg"><i style="width:${p}%;background:${c||'var(--pri)'}"></i></div>`;
+const col=p=>p>=70?'var(--ok)':p>=50?'var(--warn)':'#d0455a';
+const isNum=x=>x.t==='s10'||x.t==='s5'||x.t==='mood';
+const avgOf=(x,rs)=>{const v=rs.map(r=>ans(r,x)).filter(has);return v.length?(v.reduce((a,z)=>a+ +z,0)/v.length).toFixed(1):'–'};
+const posPct=(x,rs)=>{const v=rs.map(r=>ans(r,x)).filter(has).map(z=>isPos(x,z)).filter(z=>z!==null);return v.length?Math.round(v.filter(Boolean).length/v.length*100):null};
+const line=(a,b,c)=>`<div class="row" style="gap:10px;margin-top:6px"><span style="width:${a[0]}px;font-size:14px" ${a[2]?`title="${esc(a[2])}"`:''}>${a[1]}</span><div style="flex:1">${b}</div><span class="meta" style="width:80px;text-align:right">${c}</span></div>`;
+
+function dist(x,rs){
+ const vals=rs.map(r=>ans(r,x)).filter(has),n=vals.length||1;
+ return (isNum(x)?`<p class="meta">Average score: <b>${avgOf(x,rs)}</b></p>`:'')+opts(x).map(k=>{
+  const c=vals.filter(v=>v===k).length,p=Math.round(c/n*100);
+  return line([x.t==='mood'?100:90,esc(x.t==='mood'?k+' – '+MOOD[k-1]:k)],bar(p,x.t==='yn'?(k==='Yes'?'var(--ok)':'#d0455a'):'var(--pri)'),`${c} (${p}%)`)}).join('')}
+
+function overviewHTML(done,inprog,missing){
+ const total=all.length,pct=total?Math.round(done.length/total*100):0,nans=all.reduce((a,r)=>a+prog(r).n,0);
+ const ts=done.map(mins).filter(Boolean),avg=ts.length?Math.round(ts.reduce((a,b)=>a+b,0)/ts.length)+' min':'–';
+ const fun=Q.map((x,i)=>{const n=all.filter(r=>x.id in (r.answers||{})).length,p=total?Math.round(n/total*100):0;return line([34,'Q'+(i+1),x.q],bar(p),`${n} (${p}%)`)}).join('');
+ const dk={};done.forEach(r=>{const k=new Date(r.completedAt).toISOString().slice(0,10);dk[k]=(dk[k]||0)+1});
+ const keys=Object.keys(dk).sort().slice(-14),mx=Math.max(1,...keys.map(k=>dk[k]));
+ const daily=keys.length?`<div class="dist" style="height:120px">${keys.map(k=>`<span style="height:${dk[k]/mx*100}%" title="${dk[k]}"></span>`).join('')}</div><div class="row" style="gap:4px">${keys.map(k=>`<small class="meta" style="flex:1;text-align:center">${k.slice(5)}<br><b>${dk[k]}</b></small>`).join('')}</div>`:'<p class="meta">No submissions yet.</p>';
+ const th=THEMES.map(([nme,ids])=>{let p=0,n=0;ids.forEach(id=>{const x=QM[id];all.forEach(r=>{const v=ans(r,x);if(has(v)){const q=isPos(x,v);if(q!==null){n++;if(q)p++}}})});const pc=n?Math.round(p/n*100):null;return line([190,esc(nme)],bar(pc||0,col(pc||0)),pc===null?'–':pc+'%')}).join('');
+ return `<div class="stats"><div class="stat"><b>${total}</b>Started</div><div class="stat"><b style="color:var(--ok)">${done.length}</b>Completed</div><div class="stat"><b style="color:var(--warn)">${inprog.length}</b>In progress</div>${roster.length?`<div class="stat"><b>${missing.length}</b>Not started yet</div>`:''}<div class="stat"><b>${pct}%</b>Completion rate</div><div class="stat"><b>${nans}</b>Total answers</div><div class="stat"><b>${avg}</b>Avg time to finish</div></div>
+ <div class="card"><h3 style="margin-top:0">Survey flow: how many reached each question</h3><p class="meta">Each bar shows how many people answered that question. Where the bars shrink is where people stopped.</p>${fun}</div>
+ <div class="card mt"><h3 style="margin-top:0">Satisfaction by theme</h3><p class="meta">Share of positive answers (Yes, 7+ of 10, 4+ of 5). Green 70%+, amber 50–69%, red below 50%.</p>${th}</div>
+ <div class="card mt"><h3 style="margin-top:0">Submissions per day</h3>${daily}</div>`}
+
+function peopleHTML(){
+ const sf={new:(a,b)=>b.updatedAt-a.updatedAt,old:(a,b)=>a.startedAt-b.startedAt,name:(a,b)=>nm(a).localeCompare(nm(b)),prog:(a,b)=>prog(b).n-prog(a).n};
+ const rows=all.filter(r=>(stat==='all'||(stat==='done')===(r.status==='completed'))&&norm(nm(r)).includes(norm(filt))).sort(sf[sortBy]);
+ return `<div class="card"><div class="row sp"><h3 style="margin:0">Who has answered (${rows.length})</h3><div class="row noprint"><select id="sf" class="opt" style="padding:8px"><option value="all">All</option><option value="done" ${stat==='done'?'selected':''}>Completed</option><option value="prog" ${stat==='prog'?'selected':''}>In progress</option></select><select id="so" class="opt" style="padding:8px"><option value="new">Latest activity</option><option value="old" ${sortBy==='old'?'selected':''}>Oldest first</option><option value="name" ${sortBy==='name'?'selected':''}>Name A–Z</option><option value="prog" ${sortBy==='prog'?'selected':''}>Most answered</option></select><input type="search" id="q" placeholder="Search name" value="${esc(filt)}" style="width:170px"></div></div>
+ <div class="scroll mt"><table><tr><th>Name</th><th>Status</th><th>Progress</th><th>Started</th><th>Last activity</th><th>Time</th><th class="noprint"></th></tr>
+ ${rows.map(r=>{const p=prog(r),m=mins(r);return `<tr><td><b>${esc(nm(r))}</b></td><td><span class="pill ${r.status==='completed'?'done':'prog'}">${r.status==='completed'?'Completed':'In progress'}</span></td><td><span class="mini"><i style="width:${p.n/p.t*100}%"></i></span>${p.n}/${p.t}</td><td>${fmt(r.startedAt)}</td><td>${fmt(r.updatedAt)}</td><td>${m?m+' min':'–'}</td><td class="noprint"><button class="btn ghost" data-view="${esc(r.id)}">View details</button></td></tr>`}).join('')||'<tr><td colspan="7" class="meta">No responses yet.</td></tr>'}</table></div></div>`}
+
+function questionsHTML(){
+ const x=QM[qsel],rs=all.filter(r=>qsel in (r.answers||{}));
+ const list=rs.filter(r=>qans==='all'||ans(r,x)===qans).sort((a,b)=>nm(a).localeCompare(nm(b)));
+ const sum=Q.map((y,i)=>{const pp=posPct(y,all),n=all.filter(r=>has(ans(r,y))).length;return `<tr data-q="${y.id}" style="cursor:pointer;${y.id===qsel?'background:var(--soft)':''}"><td>${i+1}</td><td>${esc(y.q)}</td><td>${n}</td><td>${pp===null?'–':pp+'%'}</td><td>${isNum(y)?avgOf(y,all):'–'}</td></tr>`}).join('');
+ return `<div class="card"><h3 style="margin-top:0">Question explorer</h3><select id="qs" class="opt noprint" style="max-width:100%">${Q.map((y,i)=>`<option value="${y.id}" ${y.id===qsel?'selected':''}>${i+1}. ${esc(y.q.slice(0,80))}</option>`).join('')}</select>
+ <p><b>${esc(x.q)}</b></p><p class="meta">${rs.length} of ${all.length} answered</p>${x.t==='tx'?'':dist(x,rs)}
+ <div class="row sp mt"><h3 style="margin:0">Who answered what</h3>${x.t==='tx'?'':`<select id="qa" class="opt noprint" style="padding:8px"><option value="all">All answers</option>${opts(x).map(k=>`<option value="${esc(k)}" ${qans===k?'selected':''}>${esc(x.t==='mood'?k+' – '+MOOD[k-1]:k)}</option>`).join('')}</select>`}</div>
+ <div class="scroll"><table><tr><th>Name</th><th>Answer</th><th>Time</th></tr>${list.map(r=>`<tr><td><b>${esc(nm(r))}</b></td><td>${esc(lab(x,ans(r,x)))||'<span class="meta">(skipped)</span>'}</td><td>${fmt(r.updatedAt)}</td></tr>`).join('')||'<tr><td colspan="3" class="meta">No answers.</td></tr>'}</table></div></div>
+ <div class="card mt"><h3 style="margin-top:0">All questions at a glance</h3><p class="meta">Click a row to open it above. Positive = Yes, 7+ of 10, or 4+ of 5.</p><div class="scroll"><table><tr><th>#</th><th>Question</th><th>Answered</th><th>Positive</th><th>Average</th></tr>${sum}</table></div></div>`}
+
+function commentsHTML(){
+ return `<input type="search" id="cq" class="noprint" placeholder="Search comments or names" value="${esc(cfilt)}">`+['q21','q22'].map(id=>{const x=QM[id],l=all.filter(r=>has(ans(r,x))&&norm(nm(r)+' '+ans(r,x)).includes(norm(cfilt)));
+  return `<div class="card mt"><h3 style="margin-top:0">${esc(x.q)} <span class="meta">(${l.length})</span></h3>${l.map(r=>`<div class="cm"><b>${esc(nm(r))} · ${fmt(r.updatedAt)}</b>${esc(ans(r,x))}</div>`).join('')||'<p class="meta">No comments yet.</p>'}</div>`}).join('')}
+
+function settingsHTML(missing){
+ return `<div class="card"><h3 style="margin-top:0">Employee list (optional)</h3><p class="meta">Paste one full name per line to see who has not started. Names are matched with the name typed at submit.</p><textarea id="ro" placeholder="Asha Rao&#10;John Mathew">${esc(roster.join('\n'))}</textarea><div class="row mt"><button class="btn" id="rs">Save list</button></div>
+ ${roster.length?`<p><b>Not started (${missing.length}):</b> ${missing.map(esc).join(', ')||'Everyone has started 🎉'}</p>`:''}</div>`}
+
 function adminHTML(){
- const done=all.filter(r=>r.status==='completed'),started=all.filter(r=>r.name),inprog=started.filter(r=>r.status!=='completed');
- const seen=new Set(started.map(r=>norm(r.name))),missing=roster.filter(n=>!seen.has(norm(n)));
- const rows=started.filter(r=>(stat==='all'||(stat==='done')===(r.status==='completed'))&&norm(r.name).includes(norm(filt))).sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
- const pct=started.length?Math.round(done.length/started.length*100):0;
- return `<div class="row sp"><h2>Admin dashboard</h2><div class="row"><button class="btn ghost" id="chg">Refresh</button><button class="btn" id="lock">Sign out</button></div></div>
- <div class="stats"><div class="stat"><b>${started.length}</b>Started</div><div class="stat"><b style="color:var(--ok)">${done.length}</b>Completed</div><div class="stat"><b style="color:var(--warn)">${inprog.length}</b>In progress</div>
- ${roster.length?`<div class="stat"><b>${missing.length}</b>Not started yet</div>`:''}<div class="stat"><b>${pct}%</b>Completion rate</div></div>
- <div class="card"><div class="row sp"><h3 style="margin:0">Who has answered</h3><div class="row"><select id="sf" class="opt" style="padding:8px"><option value="all">All</option><option value="done" ${stat==='done'?'selected':''}>Completed</option><option value="prog" ${stat==='prog'?'selected':''}>In progress</option></select><input type="search" id="q" placeholder="Search name" value="${esc(filt)}" style="width:170px"><button class="btn" id="csv">Export CSV</button></div></div>
- <div class="scroll mt"><table><tr><th>Name</th><th>Status</th><th>Progress</th><th>Last activity</th><th></th></tr>
- ${rows.map(r=>{const p=prog(r);return `<tr><td><b>${esc(r.name)}</b></td><td><span class="pill ${r.status==='completed'?'done':'prog'}">${r.status==='completed'?'Completed':'In progress'}</span></td><td><span class="mini"><i style="width:${p.n/p.t*100}%"></i></span>${p.n}/${p.t}</td><td>${fmt(r.updatedAt)}</td><td><button class="btn ghost" data-view="${esc(r.id)}">View answers</button></td></tr>`}).join('')||'<tr><td colspan="5" class="meta">No responses yet.</td></tr>'}</table></div></div>
- <div class="card mt"><h3 style="margin-top:0">Employee list (optional)</h3><p class="meta">Paste one name per line to also see who has not started.</p>
- <textarea id="ro" placeholder="Asha Rao&#10;John Mathew">${esc(roster.join('\n'))}</textarea><div class="row mt"><button class="btn" id="rs">Save list</button></div>
- ${roster.length?`<p><b>Not started (${missing.length}):</b> ${missing.map(esc).join(', ')||'Everyone has started 🎉'}</p>`:''}</div>
- <div class="card mt"><h3 style="margin-top:0">Results by question</h3>${Q.map(insight).join('')}</div>`;
-}
-function insight(x,i){
- const rs=all.filter(r=>r.name&&x.id in (r.answers||{}));let h=`<div class="qi"><b>${i+1}. ${esc(x.q)}</b> <span class="meta">(${rs.length} answered)</span>`;
- const vals=rs.map(r=>r.answers[x.id]);
- if(x.t==='yn'||x.t==='ch'){const o=x.o||['Yes','No'],c=o.map(k=>vals.filter(v=>v===k).length),t=vals.length||1,col=['var(--ok)','#d0455a'];
-  h+=`<div class="seg mt">${c.map((n,k)=>`<i style="width:${n/t*100}%;background:${col[k]}"></i>`).join('')}</div><div class="meta">${o.map((k,j)=>`${k}: ${c[j]}`).join(' · ')}</div>`}
- else if(x.t==='tx'){h+=rs.filter(r=>r.answers[x.id]).map(r=>`<div class="cm"><b>${esc(r.name)}</b>${esc(r.answers[x.id])}</div>`).join('')||'<div class="meta">No comments yet.</div>'}
- else{const m=x.t==='s10'?10:5,c=[...Array(m)].map((_,k)=>vals.filter(v=>+v===k+1).length),mx=Math.max(1,...c),avg=vals.length?(vals.reduce((a,v)=>a+ +v,0)/vals.length).toFixed(1):'–';
-  h+=`<div class="meta">Average: <b>${avg}</b> / ${m}</div><div class="dist">${c.map(n=>`<span style="height:${n/mx*100}%" title="${n}"></span>`).join('')}</div><div class="row sp meta"><span>1</span><span>${m}</span></div>`}
- return h+'</div>'}
+ const done=all.filter(r=>r.status==='completed'),inprog=all.filter(r=>r.status!=='completed');
+ const seen=new Set(all.map(r=>norm(r.name))),missing=roster.filter(n=>!seen.has(norm(n)));
+ const T=[['overview','Overview'],['people','People'],['questions','Questions'],['comments','Comments'],['settings','Settings']];
+ const body=tab==='people'?peopleHTML():tab==='questions'?questionsHTML():tab==='comments'?commentsHTML():tab==='settings'?settingsHTML(missing):overviewHTML(done,inprog,missing);
+ return `<div class="row sp"><h2>Admin dashboard</h2><div class="row noprint"><button class="btn ghost" id="chg">Refresh</button><button class="btn ghost" id="prt">Print report</button><button class="btn" id="csv">Export CSV</button><button class="btn ghost" id="lock">Sign out</button></div></div>
+ <div class="tabs noprint" style="margin-bottom:16px">${T.map(([k,l])=>`<button class="${tab===k?'on':''}" data-tab="${k}">${l}</button>`).join('')}</div>${body}`}
+
+async function exportCsv(){
+ const q=s=>'"'+String(s??'').replace(/"/g,'""')+'"',H=['Name','Status','Started','Submitted','Minutes',...Q.map(x=>x.q)];
+ const lines=[H.map(q).join(',')].concat(all.map(r=>[nm(r),r.status,fmt(r.startedAt),fmt(r.completedAt),mins(r)||'',...Q.map(x=>ans(r,x)??'')].map(q).join(',')));
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+lines.join('\n')],{type:'text/csv'}));a.download='survey-responses.csv';a.click()}
+
 function bindAdmin(){
- $('#q').oninput=e=>{filt=e.target.value;render();const q=$('#q');q.focus();q.setSelectionRange(q.value.length,q.value.length)};
- $('#sf').onchange=e=>{stat=e.target.value;render()};
- $('#lock').onclick=async()=>{await sb.auth.signOut();location.reload()};
- $('#chg').onclick=loadAll;
+ const g=s=>document.querySelector(s),on=(s,f)=>{const e=g(s);if(e)e.onclick=f};
+ const keep=(id,set)=>{const e=g(id);if(e)e.oninput=ev=>{set(ev.target.value);render();const n=g(id);n.focus();n.setSelectionRange(n.value.length,n.value.length)}};
+ const sel=(id,set)=>{const e=g(id);if(e)e.onchange=ev=>{set(ev.target.value);render()}};
+ app.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{tab=b.dataset.tab;render()});
+ on('#chg',loadAll);on('#prt',()=>window.print());on('#csv',exportCsv);
+ on('#lock',async()=>{await sb.auth.signOut();location.reload()});
+ keep('#q',v=>filt=v);keep('#cq',v=>cfilt=v);
+ sel('#sf',v=>stat=v);sel('#so',v=>sortBy=v);sel('#qa',v=>qans=v);sel('#qs',v=>{qsel=v;qans='all'});
  app.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>detail(b.dataset.view));
- $('#rs').onclick=async()=>{const names=$('#ro').value.split('\n').map(s=>s.trim()).filter(Boolean);try{const u=[...new Set(names)];const d=await sb.from('roster').delete().neq('name','');if(d.error)throw d.error;if(u.length){const i=await sb.from('roster').insert(u.map(name=>({name})));if(i.error)throw i.error}roster=u;err=''}catch(e){err='Could not save list: '+e.message}render()};
- $('#csv').onclick=async()=>{  const q=s=>'"'+String(s??'').replace(/"/g,'""')+'"',H=['Name','Status','Started','Submitted',...Q.map(x=>x.q)];
-  const lines=[H.map(q).join(',')].concat(all.filter(r=>r.name).map(r=>[r.name,r.status,fmt(r.startedAt),fmt(r.completedAt),...Q.map(x=>(r.answers||{})[x.id]??'')].map(q).join(',')));
-  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+lines.join('\n')],{type:'text/csv'}));a.download='survey-responses.csv';a.click();};
+ app.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>{qsel=b.dataset.q;qans='all';render();scrollTo(0,0)});
+ on('#rs',async()=>{const names=[...new Set(g('#ro').value.split('\n').map(s=>s.trim()).filter(Boolean))];
+  try{const d=await sb.from('roster').delete().neq('name','');if(d.error)throw d.error;if(names.length){const i=await sb.from('roster').insert(names.map(name=>({name})));if(i.error)throw i.error}roster=names;err=''}catch(e){err='Could not save list: '+e.message}render()});
 }
+
 function detail(id){
- const r=all.find(a=>a.id===id);if(!r)return;const dl=$('#dlg'),p=prog(r);
- dl.innerHTML=`<div class="row sp"><h2 style="margin:0">${esc(r.name)}</h2><button class="btn ghost" id="cl">Close</button></div>
- <p class="meta">${r.status==='completed'?'Completed '+fmt(r.completedAt):'In progress: '+p.n+' of '+p.t+' answered'} · Started ${fmt(r.startedAt)}</p>
- ${act(r.answers||{}).map((x,i)=>{const v=(r.answers||{})[x.id],has=x.id in (r.answers||{});return `<div class="qi"><span class="meta">${esc(x.q)}</span><br><b>${has?(esc(x.t==='mood'?v+' – '+MOOD[v-1]:v)||'<span class="meta">Skipped</span>'):'<span class="meta">Not answered yet</span>'}</b></div>`}).join('')}`;
- dl.showModal();$('#cl').onclick=()=>dl.close();
+ const r=all.find(a=>a.id===id);if(!r)return;const dl=$('#dlg'),p=prog(r),l=act(r.answers||{}),m=mins(r);
+ let pp=0,pn=0;l.forEach(x=>{const v=ans(r,x);if(has(v)){const q=isPos(x,v);if(q!==null){pn++;if(q)pp++}}});
+ dl.innerHTML=`<div class="row sp"><h2 style="margin:0">${esc(nm(r))}</h2><button class="btn ghost" id="cl">Close</button></div>
+ <p><span class="pill ${r.status==='completed'?'done':'prog'}">${r.status==='completed'?'Completed':'In progress'}</span></p>
+ <p class="meta">Started ${fmt(r.startedAt)} · Last activity ${fmt(r.updatedAt)}${r.completedAt?' · Submitted '+fmt(r.completedAt):''}${m?' · Took '+m+' min':''}<br>Answered ${p.n} of ${p.t}${pn?' · '+Math.round(pp/pn*100)+'% positive answers':''}</p>
+ ${l.map((x,i)=>{const v=ans(r,x),h=x.id in (r.answers||{});return `<div class="qi"><span class="meta">${i+1}. ${esc(x.q)}</span><br><b>${h?(esc(lab(x,v))||'<span class="meta">Skipped</span>'):'<span class="meta">Not answered yet</span>'}</b></div>`}).join('')}
+ <div class="row mt"><button class="btn ghost" id="dp">Print</button><button class="btn ghost" id="dd" style="color:#d0455a">Delete this response</button></div>`;
+ dl.showModal();$('#cl').onclick=()=>dl.close();$('#dp').onclick=()=>window.print();
+ $('#dd').onclick=async()=>{if(!confirm('Delete this response permanently?'))return;const e=await sb.from('responses').delete().eq('user_id',id);if(e.error){alert(e.error.message);return}dl.close();loadAll()};
 }
 window.addEventListener('hashchange',()=>location.reload());
 init();
