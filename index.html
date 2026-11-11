@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mary – Employee check-in</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f5f3fa;--card:#fff;--ink:#231d3b;--mut:#6b6585;--line:#e2deef;--pri:#5b4bd5;--pri-ink:#fff;--soft:#ece9fb;--ok:#1f9d6b;--warn:#c27a00;--mary:#ffb84d;--bub:#fff;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#171428;--card:#221e38;--ink:#efecfa;--mut:#a39dc0;--line:#352f55;--pri:#8b7dff;--pri-ink:#12102a;--soft:#2c2750;--ok:#46d39a;--warn:#f0b24a;--bub:#2a2547;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#171428;--card:#221e38;--ink:#efecfa;--mut:#a39dc0;--line:#352f55;--pri:#8b7dff;--pri-ink:#12102a;--soft:#2c2750;--ok:#46d39a;--warn:#f0b24a;--bub:#2a2547;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Figtree,system-ui,sans-serif}
+h1,h2,h3{font-family:'Bricolage Grotesque',Figtree,sans-serif;margin:0;letter-spacing:-.01em}
+.wrap{max-width:720px;margin:0 auto;padding:16px}.wide{max-width:1100px}
+header{display:flex;align-items:center;gap:12px;justify-content:space-between;padding:8px 0 16px}
+.brand{display:flex;align-items:center;gap:10px;font-family:'Bricolage Grotesque';font-weight:700;font-size:20px}
+.av{width:38px;height:38px;border-radius:50%;background:var(--mary);display:grid;place-items:center;font-size:20px;flex:none}
+.tabs{display:flex;gap:4px;background:var(--soft);padding:4px;border-radius:12px}
+.tabs button{border:0;background:none;color:var(--ink);padding:8px 14px;border-radius:9px;font:600 14px Figtree;cursor:pointer}
+.tabs button.on{background:var(--pri);color:var(--pri-ink)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px}
+.bub{display:flex;gap:12px;align-items:flex-start;margin-bottom:18px}
+.bub .t{background:var(--bub);border:1px solid var(--line);border-radius:4px 18px 18px 18px;padding:14px 16px;font-size:18px;line-height:1.45}
+.bar{height:6px;background:var(--soft);border-radius:9px;overflow:hidden;margin:6px 0 18px}.bar i{display:block;height:100%;background:var(--pri);border-radius:9px;transition:width .3s}
+.meta{color:var(--mut);font-size:14px}
+.opts{display:flex;flex-wrap:wrap;gap:10px;margin-left:50px}
+.opt{border:1.5px solid var(--line);background:var(--card);color:var(--ink);border-radius:14px;padding:12px 18px;font:600 16px Figtree;cursor:pointer;min-width:56px;text-align:center}
+.opt:hover{border-color:var(--pri)}.opt.on{background:var(--pri);color:var(--pri-ink);border-color:var(--pri)}
+.opt small{display:block;font-weight:400;font-size:12px;opacity:.8}
+.ends{display:flex;justify-content:space-between;margin:8px 0 0 50px;color:var(--mut);font-size:13px}
+input[type=text],input[type=search],input[type=password],textarea{width:100%;border:1.5px solid var(--line);background:var(--card);color:var(--ink);border-radius:12px;padding:12px 14px;font:16px Figtree}
+textarea{min-height:110px;resize:vertical}
+:focus-visible{outline:3px solid var(--pri);outline-offset:2px}
+.btn{border:0;background:var(--pri);color:var(--pri-ink);padding:12px 22px;border-radius:12px;font:600 16px Figtree;cursor:pointer}
+.btn.ghost{background:none;color:var(--mut);padding:12px 8px}.btn:disabled{opacity:.45;cursor:not-allowed}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.sp{justify-content:space-between}
+.pad{margin-left:50px}.mt{margin-top:18px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px}.stat b{display:block;font:700 32px 'Bricolage Grotesque'}
+.scroll{overflow-x:auto}table{width:100%;border-collapse:collapse;min-width:560px}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);font-size:15px;vertical-align:middle}th{color:var(--mut);font-weight:600;font-size:13px}
+.pill{display:inline-block;padding:3px 10px;border-radius:99px;font-size:13px;font-weight:600}
+.pill.done{background:color-mix(in srgb,var(--ok) 18%,transparent);color:var(--ok)}.pill.prog{background:color-mix(in srgb,var(--warn) 18%,transparent);color:var(--warn)}.pill.none{background:var(--soft);color:var(--mut)}
+.mini{width:90px;height:6px;background:var(--soft);border-radius:9px;overflow:hidden;display:inline-block;vertical-align:middle;margin-right:8px}.mini i{display:block;height:100%;background:var(--pri)}
+.seg{display:flex;height:10px;border-radius:9px;overflow:hidden;background:var(--soft)}.seg i{display:block}
+.qi{padding:14px 0;border-bottom:1px solid var(--line)}.qi:last-child{border:0}
+.dist{display:flex;gap:4px;align-items:flex-end;height:44px;margin-top:8px}.dist span{flex:1;background:var(--pri);border-radius:4px 4px 0 0;min-height:3px;opacity:.85}
+.cm{background:var(--soft);border-radius:10px;padding:8px 12px;margin-top:8px;font-size:15px}.cm b{font-size:13px;color:var(--mut);display:block}
+dialog{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:18px;max-width:640px;width:calc(100% - 24px);padding:22px;max-height:85vh}
+dialog::backdrop{background:#0008}
+h2{font-size:24px;margin-bottom:12px}h3{font-size:18px;margin:22px 0 8px}
+.err{color:#d0455a}
+</style></head>
+<body><div class="wrap" id="app"><p class="meta">Loading…</p></div>
+<dialog id="dlg"></dialog>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+const Q=[
+{id:'q1',t:'yn',q:'Have you been with the company for 6 months now?'},
+{id:'q2',t:'s10',q:'How happy or proud do you feel to be associated with the organisation? (1 = not at all, 10 = extremely)'},
+{id:'q3',t:'s10',q:'Do you have a sense of belonging? (1 = not at all, 10 = completely)'},
+{id:'q4',t:'yn',q:'Do you see yourself working here over the next two years?'},
+{id:'q5',t:'yn',q:'Are you clear on the job responsibilities assigned to you?'},
+{id:'q6',t:'ch',q:'Were you able to do them on your own, or did you need help or guidance from your reporting manager?',o:['On my own','Needed help']},
+{id:'q7',t:'s5',q:'How was your experience when you asked for help or support? (1 = no help, 5 = full support)',lo:'No help',hi:'Full support',showIf:a=>a.q6==='Needed help'},
+{id:'q8',t:'yn',q:'Do you receive regular and constructive feedback from your manager?'},
+{id:'q9',t:'yn',q:'Do you see opportunities for growth within the organisation?'},
+{id:'q10',t:'yn',q:'Are the expectations for career progression clearly defined?'},
+{id:'q11',t:'yn',q:'Does the organisation provide adequate learning and development opportunities?'},
+{id:'q12',t:'yn',q:'Do you receive sufficient encouragement to take on new responsibilities?'},
+{id:'q13',t:'yn',q:'Do you feel respected in your workplace?'},
+{id:'q14',t:'yn',q:'Is your workplace free from bias, discrimination and favouritism?'},
+{id:'q15',t:'yn',q:'Is good performance acknowledged in a timely manner?'},
+{id:'q16',t:'yn',q:'Do you feel your efforts and contributions are recognised?'},
+{id:'q17',t:'yn',q:'Do you feel the workload is manageable?'},
+{id:'q18',t:'yn',q:'Does the organisation show genuine concern for employee wellbeing?'},
+{id:'q19',t:'yn',q:'Do you receive adequate information about important organisational developments?'},
+{id:'q20',t:'yn',q:'Is important information communicated transparently?'},
+{id:'q21',t:'tx',q:'What is the one thing you enjoy most about working here?'},
+{id:'q22',t:'tx',q:'Is there anything else you would like the organisation to know?'},
+{id:'q23',t:'mood',q:'How do you rate your personal life?'},
+{id:'q24',t:'mood',q:'How do you rate your personal finance wellbeing?'}];
+const MOOD=['Sad','Average','Good','Happy','Excellent'];
+const $=s=>document.querySelector(s),app=$('#app');
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const act=a=>Q.filter(x=>!x.showIf||x.showIf(a));
+const fmt=t=>t?new Date(t).toLocaleString([], {dateStyle:'medium',timeStyle:'short'}):'–';
+const SUPABASE_URL='https://qckwcbsqtpbodwjtbdpw.supabase.co',SUPABASE_KEY='sb_publishable_qmOPB3CMZWBCFsXWOypuhA_lrs4LT2t';
+if(SUPABASE_URL.includes('PASTE')){document.getElementById('app').innerHTML='<div class="card"><h2>Setup needed</h2><p>The Supabase Project URL has not been added yet. Open this file and replace https://qckwcbsqtpbodwjtbdpw.supabase.co on line 88 with your project URL.</p></div>';throw new Error('Missing Supabase URL')}
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+let isAdmin=false,S=null,cur=0,view='survey',all=[],roster=[],err='',chain=Promise.resolve(),me=null;
+const row=r=>({id:r.user_id,name:r.name,answers:r.answers||{},status:r.status,startedAt:Date.parse(r.started_at),updatedAt:Date.parse(r.updated_at),completedAt:r.completed_at?Date.parse(r.completed_at):null});
+function save(){S.updatedAt=Date.now();
+ const d={user_id:me,name:S.name,answers:JSON.parse(JSON.stringify(S.answers)),status:S.status,started_at:new Date(S.startedAt||Date.now()).toISOString(),updated_at:new Date().toISOString(),completed_at:S.completedAt?new Date(S.completedAt).toISOString():null};
+ chain=chain.then(async()=>{const {error}=await sb.from('responses').upsert(d);if(error)throw error}).catch(e=>{err='Could not save: '+e.message;render()})}
+function firstOpen(){const l=act(S.answers);const i=l.findIndex(x=>!(x.id in S.answers));return i<0?l.length:i}
+async function loadAll(){
+ const a=await sb.from('responses').select('*').order('updated_at',{ascending:false});
+ if(a.error)err=a.error.message;else{err='';all=a.data.map(row)}
+ const r=await sb.from('roster').select('name');roster=(r.data||[]).map(x=>x.name);
+ const ae=document.activeElement;if(!(ae&&ae.tagName==='TEXTAREA'))render()}
+async function checkAdmin(){
+ const {data}=await sb.auth.getSession();const s=data.session;
+ if(!s||s.user.is_anonymous)return false;
+ const r=await sb.from('admins').select('user_id').eq('user_id',s.user.id);return !!(r.data&&r.data.length)}
+function shell(inner,wide){return `<div style="max-width:${wide?1100:720}px;margin:0 auto"><header><div class="brand"><span class="av">🌼</span>Mary</div></header>${err?`<p class="err">${esc(err)}</p>`:''}${inner}</div>`}
+function loginHTML(){return shell(`<div class="card" style="max-width:420px;margin:0 auto"><h2>Admin login</h2><input type="text" id="em" placeholder="Admin email" autocomplete="username"><input type="password" id="pw" style="margin-top:10px" placeholder="Password" autocomplete="current-password"><p class="err" id="le"></p><div class="row mt"><button class="btn" id="li">Sign in</button></div></div>`)}
+function bindLogin(){const go=async()=>{const {error}=await sb.auth.signInWithPassword({email:$('#em').value.trim(),password:$('#pw').value});if(error){$('#le').textContent=error.message;return}location.reload()};$('#li').onclick=go;$('#pw').onkeydown=e=>e.key==='Enter'&&go()}
+async function init(){
+ try{
+  if(location.hash==='#admin'){
+   view='admin';isAdmin=await checkAdmin();
+   if(isAdmin){S={name:'admin',answers:{},status:'x'};await loadAll();setInterval(loadAll,20000);return}
+   app.innerHTML=loginHTML();bindLogin();return}
+  let {data:{session}}=await sb.auth.getSession();
+  if(!session||!session.user.is_anonymous){if(session)await sb.auth.signOut();const r=await sb.auth.signInAnonymously();if(r.error)throw r.error;session=r.data.session}
+  me=session.user.id;
+  const r=await sb.from('responses').select('*').eq('user_id',me).maybeSingle();
+  S=r.data?row(r.data):{name:'',answers:{},status:'new'};cur=firstOpen();
+ }catch(e){err=e.message||String(e)}
+ render();
+}
+function render(){
+ if(view==='admin'&&!isAdmin)return;
+ if(!S){app.innerHTML=shell('<p class="meta">Loading…</p>');return}
+ const adm=view==='admin';
+ app.innerHTML=shell(adm?adminHTML():surveyHTML(),adm);
+ adm?bindAdmin():bindSurvey();
+}
+const mary=t=>`<div class="bub"><span class="av">🌼</span><div class="t">${t}</div></div>`;
+
+function surveyHTML(){
+ if(!S.name)return `<div class="card">${mary('Hi, I’m Mary, your employee check-in buddy. I’m here to listen and help make work and life a little better. First, what’s your full name?')}
+ <div class="pad"><input type="text" id="nm" placeholder="Your full name" autocomplete="name">
+ <p class="meta">Your name is saved with your answers so the organisation can see who has completed the check-in.</p>
+ <button class="btn mt" id="go">Start check-in</button></div></div>`;
+ if(S.status==='completed')return `<div class="card">${mary(`Thank you, ${esc(S.name)}. Your answers are submitted. Take care of yourself! 🌼`)}<p class="meta pad">Submitted ${fmt(S.completedAt)}</p></div>`;
+ const l=act(S.answers),n=l.length;
+ if(cur>=n)return `<div class="card">${mary(`That’s everything, ${esc(S.name)}. Ready to submit your answers?`)}
+ <div class="row pad"><button class="btn ghost" id="back">Back</button><button class="btn" id="sub">Submit my answers</button></div></div>`;
+ const x=l[cur],v=S.answers[x.id];let o='';
+ const b=(val,lab,sub)=>`<button class="opt ${v===val?'on':''}" data-a="${esc(val)}">${lab}${sub?`<small>${sub}</small>`:''}</button>`;
+ if(x.t==='yn')o=`<div class="opts">${b('Yes','Yes')}${b('No','No')}</div>`;
+ if(x.t==='ch')o=`<div class="opts">${x.o.map(k=>b(k,k)).join('')}</div>`;
+ if(x.t==='s10')o=`<div class="opts">${[...Array(10)].map((_,i)=>b(String(i+1),i+1)).join('')}</div>`;
+ if(x.t==='s5')o=`<div class="opts">${[1,2,3,4,5].map(i=>b(String(i),i)).join('')}</div><div class="ends"><span>${x.lo}</span><span>${x.hi}</span></div>`;
+ if(x.t==='mood')o=`<div class="opts">${MOOD.map((m,i)=>b(String(i+1),i+1,m)).join('')}</div>`;
+ if(x.t==='tx')o=`<div class="pad"><textarea id="tx" placeholder="Type your answer here">${esc(v||'')}</textarea><div class="row mt"><button class="btn" id="nx">Next</button><button class="btn ghost" id="sk">Skip</button></div></div>`;
+ return `<div class="card"><div class="meta">Question ${cur+1} of ${n}</div><div class="bar"><i style="width:${cur/n*100}%"></i></div>${mary(esc(x.q))}${o}
+ ${cur>0?'<div class="pad mt"><button class="btn ghost" id="back">← Back</button></div>':''}</div>`;
+}
+function bindSurvey(){
+ const g=s=>$(s);
+ if(g('#go')){const i=g('#nm');const go=()=>{const v=i.value.trim();if(v.length<2){i.focus();return}S.name=v;S.status='in_progress';S.startedAt=Date.now();save();render()};g('#go').onclick=go;i.onkeydown=e=>e.key==='Enter'&&go();i.focus()}
+ if(g('#back'))g('#back').onclick=()=>{cur=Math.max(0,cur-1);render()};
+ if(g('#sub'))g('#sub').onclick=()=>{S.status='completed';S.completedAt=Date.now();save();render()};
+ const l=S.name?act(S.answers):[],x=l[cur];
+ app.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{S.answers[x.id]=b.dataset.a;S.status='in_progress';save();setTimeout(()=>{cur++;render()},180);b.classList.add('on')});
+ const adv=val=>{S.answers[x.id]=val;save();cur++;render()};
+ if(g('#nx'))g('#nx').onclick=()=>adv(g('#tx').value.trim());
+ if(g('#sk'))g('#sk').onclick=()=>adv('');
+}
+
+/* ---------- Admin ---------- */
+let filt='',stat='all';
+const norm=s=>String(s||'').trim().toLowerCase().replace(/\s+/g,' ');
+function prog(r){const l=act(r.answers||{});return{n:l.filter(x=>x.id in (r.answers||{})).length,t:l.length}}
+function adminHTML(){
+ const done=all.filter(r=>r.status==='completed'),started=all.filter(r=>r.name),inprog=started.filter(r=>r.status!=='completed');
+ const seen=new Set(started.map(r=>norm(r.name))),missing=roster.filter(n=>!seen.has(norm(n)));
+ const rows=started.filter(r=>(stat==='all'||(stat==='done')===(r.status==='completed'))&&norm(r.name).includes(norm(filt))).sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
+ const pct=started.length?Math.round(done.length/started.length*100):0;
+ return `<div class="row sp"><h2>Admin dashboard</h2><div class="row"><button class="btn ghost" id="chg">Refresh</button><button class="btn" id="lock">Sign out</button></div></div>
+ <div class="stats"><div class="stat"><b>${started.length}</b>Started</div><div class="stat"><b style="color:var(--ok)">${done.length}</b>Completed</div><div class="stat"><b style="color:var(--warn)">${inprog.length}</b>In progress</div>
+ ${roster.length?`<div class="stat"><b>${missing.length}</b>Not started yet</div>`:''}<div class="stat"><b>${pct}%</b>Completion rate</div></div>
+ <div class="card"><div class="row sp"><h3 style="margin:0">Who has answered</h3><div class="row"><select id="sf" class="opt" style="padding:8px"><option value="all">All</option><option value="done" ${stat==='done'?'selected':''}>Completed</option><option value="prog" ${stat==='prog'?'selected':''}>In progress</option></select><input type="search" id="q" placeholder="Search name" value="${esc(filt)}" style="width:170px"><button class="btn" id="csv">Export CSV</button></div></div>
+ <div class="scroll mt"><table><tr><th>Name</th><th>Status</th><th>Progress</th><th>Last activity</th><th></th></tr>
+ ${rows.map(r=>{const p=prog(r);return `<tr><td><b>${esc(r.name)}</b></td><td><span class="pill ${r.status==='completed'?'done':'prog'}">${r.status==='completed'?'Completed':'In progress'}</span></td><td><span class="mini"><i style="width:${p.n/p.t*100}%"></i></span>${p.n}/${p.t}</td><td>${fmt(r.updatedAt)}</td><td><button class="btn ghost" data-view="${esc(r.id)}">View answers</button></td></tr>`}).join('')||'<tr><td colspan="5" class="meta">No responses yet.</td></tr>'}</table></div></div>
+ <div class="card mt"><h3 style="margin-top:0">Employee list (optional)</h3><p class="meta">Paste one name per line to also see who has not started.</p>
+ <textarea id="ro" placeholder="Asha Rao&#10;John Mathew">${esc(roster.join('\n'))}</textarea><div class="row mt"><button class="btn" id="rs">Save list</button></div>
+ ${roster.length?`<p><b>Not started (${missing.length}):</b> ${missing.map(esc).join(', ')||'Everyone has started 🎉'}</p>`:''}</div>
+ <div class="card mt"><h3 style="margin-top:0">Results by question</h3>${Q.map(insight).join('')}</div>`;
+}
+function insight(x,i){
+ const rs=all.filter(r=>r.name&&x.id in (r.answers||{}));let h=`<div class="qi"><b>${i+1}. ${esc(x.q)}</b> <span class="meta">(${rs.length} answered)</span>`;
+ const vals=rs.map(r=>r.answers[x.id]);
+ if(x.t==='yn'||x.t==='ch'){const o=x.o||['Yes','No'],c=o.map(k=>vals.filter(v=>v===k).length),t=vals.length||1,col=['var(--ok)','#d0455a'];
+  h+=`<div class="seg mt">${c.map((n,k)=>`<i style="width:${n/t*100}%;background:${col[k]}"></i>`).join('')}</div><div class="meta">${o.map((k,j)=>`${k}: ${c[j]}`).join(' · ')}</div>`}
+ else if(x.t==='tx'){h+=rs.filter(r=>r.answers[x.id]).map(r=>`<div class="cm"><b>${esc(r.name)}</b>${esc(r.answers[x.id])}</div>`).join('')||'<div class="meta">No comments yet.</div>'}
+ else{const m=x.t==='s10'?10:5,c=[...Array(m)].map((_,k)=>vals.filter(v=>+v===k+1).length),mx=Math.max(1,...c),avg=vals.length?(vals.reduce((a,v)=>a+ +v,0)/vals.length).toFixed(1):'–';
+  h+=`<div class="meta">Average: <b>${avg}</b> / ${m}</div><div class="dist">${c.map(n=>`<span style="height:${n/mx*100}%" title="${n}"></span>`).join('')}</div><div class="row sp meta"><span>1</span><span>${m}</span></div>`}
+ return h+'</div>'}
+function bindAdmin(){
+ $('#q').oninput=e=>{filt=e.target.value;render();const q=$('#q');q.focus();q.setSelectionRange(q.value.length,q.value.length)};
+ $('#sf').onchange=e=>{stat=e.target.value;render()};
+ $('#lock').onclick=async()=>{await sb.auth.signOut();location.reload()};
+ $('#chg').onclick=loadAll;
+ app.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>detail(b.dataset.view));
+ $('#rs').onclick=async()=>{const names=$('#ro').value.split('\n').map(s=>s.trim()).filter(Boolean);try{const u=[...new Set(names)];const d=await sb.from('roster').delete().neq('name','');if(d.error)throw d.error;if(u.length){const i=await sb.from('roster').insert(u.map(name=>({name})));if(i.error)throw i.error}roster=u;err=''}catch(e){err='Could not save list: '+e.message}render()};
+ $('#csv').onclick=async()=>{  const q=s=>'"'+String(s??'').replace(/"/g,'""')+'"',H=['Name','Status','Started','Submitted',...Q.map(x=>x.q)];
+  const lines=[H.map(q).join(',')].concat(all.filter(r=>r.name).map(r=>[r.name,r.status,fmt(r.startedAt),fmt(r.completedAt),...Q.map(x=>(r.answers||{})[x.id]??'')].map(q).join(',')));
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+lines.join('\n')],{type:'text/csv'}));a.download='survey-responses.csv';a.click();};
+}
+function detail(id){
+ const r=all.find(a=>a.id===id);if(!r)return;const dl=$('#dlg'),p=prog(r);
+ dl.innerHTML=`<div class="row sp"><h2 style="margin:0">${esc(r.name)}</h2><button class="btn ghost" id="cl">Close</button></div>
+ <p class="meta">${r.status==='completed'?'Completed '+fmt(r.completedAt):'In progress: '+p.n+' of '+p.t+' answered'} · Started ${fmt(r.startedAt)}</p>
+ ${act(r.answers||{}).map((x,i)=>{const v=(r.answers||{})[x.id],has=x.id in (r.answers||{});return `<div class="qi"><span class="meta">${esc(x.q)}</span><br><b>${has?(esc(x.t==='mood'?v+' – '+MOOD[v-1]:v)||'<span class="meta">Skipped</span>'):'<span class="meta">Not answered yet</span>'}</b></div>`}).join('')}`;
+ dl.showModal();$('#cl').onclick=()=>dl.close();
+}
+init();
+</script></body></html>
